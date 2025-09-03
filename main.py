@@ -30,71 +30,71 @@ class Calculator:
         self.result=0.0
         self.operationString=operation
         self.stackOfAdditionSubstraction=MinimumStack()
-    
+
+    def getNextNumber(self, i):
+        """
+        Have a sign, check the sign and adjust it depending on it, then iterate and get all the numbers and return the sign multiplied by the number
+        """
+        IsDecimal=False
+        sign = 1
+        if i < len(self.operationString) and self.operationString[i] == "-":
+            sign = -1
+            i += 1
+        elif i < len(self.operationString) and self.operationString[i] == "+":
+            i += 1
+
+        Number2 = ""
+        while i < len(self.operationString) and (self.operationString[i].isdigit() or self.operationString[i] == "."):
+            if self.operationString[i] == "." :
+                if IsDecimal==True:
+                    i += 1
+                    continue
+                else:
+                    IsDecimal=True
+
+            Number2+= self.operationString[i]
+            i += 1
+
+        return (sign * float(Number2), i)
+
+
     def getNumbersInQueueAndResolveMultiplyDivide(self):
-        IsNegative=False
+        '''
+        Save in a stack the order of operations for additions and substractions but for multiplications and divisions
+        Resolve it inmediatly, and then save it on the stack
+        '''
         NumberFound=""
-        for i in range(len(self.operationString)):
+        i=0
+        while i < len(self.operationString):
             if self.operationString[i].isdigit():
                 NumberFound+=self.operationString[i]
             elif self.operationString[i]=="-":
-                IsNegative=True
-                NumberFound=""
-                try:
-                    if IsNegative:
-                        self.stackOfAdditionSubstraction.push(-float(NumberFound))
-                    else:
-                        self.stackOfAdditionSubstraction.push(float(NumberFound))
-                except ValueError:
-                    self.stackOfAdditionSubstraction.push(0)
+                Number2, i = self.getNextNumber(i)
+                self.stackOfAdditionSubstraction.push(float(Number2))
+                continue
+
+
             elif self.operationString[i]=="+":
-                try:
-                    if IsNegative:
-                        self.stackOfAdditionSubstraction.push(-float(NumberFound))
-                    else:
-                        self.stackOfAdditionSubstraction.push(float(NumberFound))
-                except ValueError:
-                    self.stackOfAdditionSubstraction.push(0)
-                IsNegative=False
+                self.stackOfAdditionSubstraction.push(float(NumberFound))
                 NumberFound=""
+                continue
             elif self.operationString[i]=="*":
-                Number2=""
-                for j in range(i+1,len(self.operationString)):
-                    if self.operationString[j].isdigit():
-                        Number2+=self.operationString[j]
-                    else:
-                        break
-                    try:
-                        if IsNegative:
-                            self.stackOfAdditionSubstraction.push(-float(NumberFound)*float(Number2))
-                        else:
-                            self.stackOfAdditionSubstraction.push(float(NumberFound)*float(Number2))
-                    except ValueError:
-                        self.stackOfAdditionSubstraction.push(0)
-                    i=j
-
-                IsNegative=False
+                Number2, i = self.getNextNumber(i+1)
+                self.stackOfAdditionSubstraction.push(float(NumberFound)*float(Number2)) ##Assign the final amoount between the 2 parts
                 NumberFound=""
                 Number2=""
+                continue
             elif self.operationString[i]=="/":
-                Number2=""
-                for j in range(i+1,len(self.operationString)-i):
-                    if self.operationString[j].isdigit():
-                        Number2+=self.operationString[j]
-                    else:
-                        break
-                try:
-                    if IsNegative:
-                        self.stackOfAdditionSubstraction.push(-float(NumberFound)/float(Number2))
-                    else:
-                        self.stackOfAdditionSubstraction.push(float(NumberFound)/float(Number2))
-                except ValueError:
-                    self.stackOfAdditionSubstraction.push(0)
-                i=j
-
-                IsNegative=False
+                Number2, i = self.getNextNumber(i+1)
+                self.stackOfAdditionSubstraction.push(float(NumberFound)/float(Number2)) ##Assign the final amoount between the 2 parts
                 NumberFound=""
+                Number2=""
+                continue
+            i+=1
     def AddSubstractQueue(self):
+        '''
+        Loops the stack to sum everything there (the negative should already be saved as negative so that when added, it substracts automatically)
+        '''
         finalResult=0.0
         while True:
             amountOfStack=self.stackOfAdditionSubstraction.pop()
@@ -104,13 +104,17 @@ class Calculator:
         return finalResult
 
     def Resolve(self):
+        '''
+        Call the function that saves the numbers in the stack and resolve the multiplciation-divisions
+        and the function that sums-substracts everything on the stack
+        '''
         self.getNumbersInQueueAndResolveMultiplyDivide()
         return self.AddSubstractQueue()
 
 
 
 if __name__ == "__main__":
-    stringWithOperation="-23+3*3"
+    stringWithOperation="-3.5*2"
     result=Calculator(stringWithOperation)
     print(result.Resolve())
 

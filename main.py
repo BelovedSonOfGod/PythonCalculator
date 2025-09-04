@@ -6,7 +6,7 @@ class Node:
 
 
 
-class MinimumStack:
+class Stack:
     def __init__(self):
         self.head=None
     def push(self,val:float):
@@ -29,9 +29,9 @@ class Calculator:
     def __init__(self,operation:str):
         self.result=0.0
         self.operationString=operation
-        self.stackOfAdditionSubstraction=MinimumStack()
+        self.stackOfAdditionSubstraction=Stack()
 
-    def getNextNumber(self, i):
+    def getNextNumber(self, i:int):
         """
         Have a sign, check the sign and adjust it depending on it, then iterate and get all the numbers and return the sign multiplied by the number
         """
@@ -56,6 +56,15 @@ class Calculator:
             i += 1
 
         return (sign * float(Number2), i)
+    def checkNextSignForDelayedOperation(self,i:int)->bool:
+        '''
+        For delaying pushing to stack in case is multiplication or division for example
+        '''
+        if self.operationString[i]=="*" or self.operationString[i]=="/":
+            return True
+        else:
+            return False
+
 
 
     def getNumbersInQueueAndResolveMultiplyDivide(self):
@@ -64,15 +73,19 @@ class Calculator:
         Resolve it inmediatly, and then save it on the stack
         '''
         NumberFound=""
+        Number2=""
         i=0
         while i < len(self.operationString):
             if self.operationString[i].isdigit():
                 NumberFound+=self.operationString[i]
             elif self.operationString[i]=="-":
                 Number2, i = self.getNextNumber(i)
-                self.stackOfAdditionSubstraction.push(float(Number2))
+                if self.checkNextSignForDelayedOperation(i): #If true it means the pushing to stack must be delayed
+                    NumberFound=Number2
+                else:
+                    self.stackOfAdditionSubstraction.push(float(Number2))
+                
                 continue
-
 
             elif self.operationString[i]=="+":
                 self.stackOfAdditionSubstraction.push(float(NumberFound))

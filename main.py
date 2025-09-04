@@ -1,4 +1,9 @@
+'''
 
+Shunting-yard of Dijkstra algorithm
+
+For the future in case I want to add parenthesis
+'''
 class Node:
     def __init__(self,val,next):
         self.value=val
@@ -31,31 +36,6 @@ class Calculator:
         self.operationString=operation
         self.stackOfAdditionSubstraction=Stack()
 
-    def getNextNumber(self, i:int):
-        """
-        Have a sign, check the sign and adjust it depending on it, then iterate and get all the numbers and return the sign multiplied by the number
-        """
-        IsDecimal=False
-        sign = 1
-        if i < len(self.operationString) and self.operationString[i] == "-":
-            sign = -1
-            i += 1
-        elif i < len(self.operationString) and self.operationString[i] == "+":
-            i += 1
-
-        Number2 = ""
-        while i < len(self.operationString) and (self.operationString[i].isdigit() or self.operationString[i] == "."):
-            if self.operationString[i] == "." :
-                if IsDecimal==True:
-                    i += 1
-                    continue
-                else:
-                    IsDecimal=True
-
-            Number2+= self.operationString[i]
-            i += 1
-
-        return (sign * float(Number2), i)
     def checkNextSignForDelayedOperation(self,i:int)->bool:
         '''
         For delaying pushing to stack in case is multiplication or division for example
@@ -66,43 +46,62 @@ class Calculator:
             return False
 
 
+    def tokenize(self):
+        tokens = []
+        i = 0
+        sign=1
+        while i < len(self.operationString):
+            ch = self.operationString[i]
+            
+            # Ignore spaces
+            if ch == " ":
+                i += 1
+                continue
+            
+            # Negative or decimal number
+            if ch.isdigit() or ch == "-" or (ch in "+-" and (i == 0 or self.operationString[i-1] in "*/+-")):
+                num = ch
+                i += 1
+                has_decimal = (ch == ".")
+                while i < len(self.operationString) and (self.operationString[i].isdigit() or self.operationString[i] == "."):
+                    if self.operationString[i] == ".":
+                        if has_decimal:
+                            raise ValueError("Invalid number with two decimals")
+                        has_decimal = True
+                    num += self.operationString[i]
+                    i += 1
+                tokens.append(num)
+                continue
+            
+            # Operators
+            if ch in "+-*/()":
+                tokens.append(ch)
+                i += 1
+                continue
+            
+            raise ValueError(f"Unexpected character: {ch}")
+        
+        return tokens
+    
 
-    def getNumbersInQueueAndResolveMultiplyDivide(self):
+    
+
+    def processMulDiv(self):
         '''
         Save in a stack the order of operations for additions and substractions but for multiplications and divisions
         Resolve it inmediatly, and then save it on the stack
         '''
-        NumberFound=""
-        Number2=""
+        tokens=self.tokenize()
         i=0
-        while i < len(self.operationString):
-            if self.operationString[i].isdigit():
-                NumberFound+=self.operationString[i]
-            elif self.operationString[i]=="-":
-                Number2, i = self.getNextNumber(i)
-                if self.checkNextSignForDelayedOperation(i): #If true it means the pushing to stack must be delayed
-                    NumberFound=Number2
-                else:
-                    self.stackOfAdditionSubstraction.push(float(Number2))
-                
-                continue
-
-            elif self.operationString[i]=="+":
-                self.stackOfAdditionSubstraction.push(float(NumberFound))
-                NumberFound=""
-                continue
-            elif self.operationString[i]=="*":
-                Number2, i = self.getNextNumber(i+1)
-                self.stackOfAdditionSubstraction.push(float(NumberFound)*float(Number2)) ##Assign the final amoount between the 2 parts
-                NumberFound=""
-                Number2=""
-                continue
-            elif self.operationString[i]=="/":
-                Number2, i = self.getNextNumber(i+1)
-                self.stackOfAdditionSubstraction.push(float(NumberFound)/float(Number2)) ##Assign the final amoount between the 2 parts
-                NumberFound=""
-                Number2=""
-                continue
+        while i < len(tokens):
+            if tokens[i]=="-":
+                self.stackOfAdditionSubstraction.push(float(tokens[i+1]))
+            elif tokens[i]=="+":
+                self.stackOfAdditionSubstraction.push(float(tokens[i-1]))
+            elif tokens[i]=="*":
+                self.stackOfAdditionSubstraction.push(float(tokens[i-1])*float(tokens[i+1])) ##Assign the final amoount between the 2 parts
+            elif tokens[i]=="/":
+                self.stackOfAdditionSubstraction.push(float(tokens[i-1])/float(tokens[i+1])) ##Assign the final amoount between the 2 parts
             i+=1
     def AddSubstractQueue(self):
         '''
@@ -121,13 +120,13 @@ class Calculator:
         Call the function that saves the numbers in the stack and resolve the multiplciation-divisions
         and the function that sums-substracts everything on the stack
         '''
-        self.getNumbersInQueueAndResolveMultiplyDivide()
+        self.processMulDiv()
         return self.AddSubstractQueue()
 
 
 
 if __name__ == "__main__":
-    stringWithOperation="-3.5*2"
+    stringWithOperation="-3.5 + 4 * -2"
     result=Calculator(stringWithOperation)
     print(result.Resolve())
 
